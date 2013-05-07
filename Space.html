@@ -1,0 +1,785 @@
+<!DOCTYPE html>
+<html>
+<body>
+<head>
+    <title>.....:: SPACE WAR ::.....</title>
+  <style>
+    body {
+            margin: 0;
+            padding: 0;
+            background-color: #000000;
+        }
+
+        #help{
+            position: absolute;
+            z-index: 20;
+            color: black;
+            top: 20px;
+            left: 120px;
+        }
+	</style>
+    <script src="pixi.js"></script>
+</head>
+<body>
+    <audio  id="Music" >
+
+    <source src="sound/sound.wav" type="audio/wav"> 
+    </audio>
+
+    <audio  id="lasSound" >
+
+    <source src="sound/laserSound.wav" type="audio/wav"> 
+    </audio>
+
+
+    <audio  id="collide" >
+
+    <source src="sound/Collide1.wav" type="audio/wav"> 
+    </audio>
+<script>
+
+ //Game Canvas
+//-------------------
+var stage = new PIXI.Stage(0xFFFFFF,true);
+var renderer = PIXI.autoDetectRenderer(window.innerWidth, window.innerHeight,null);  // create a renderer instance
+document.body.appendChild(renderer.view);// add the renderer view element to the DOM
+	
+  //Posistion of the Game In the Screen 
+	renderer.view.style.position="absolute";
+	renderer.view.style.top="0px";
+  renderer.view.style.right="0px";
+  requestAnimFrame( animate );
+//================================================================================
+
+ //Create a container that hold all game's componenet 
+//--------------------------------------------------
+  var container = new PIXI.DisplayObjectContainer();
+  container.position.x = 0;
+  container.position.y = 0;
+//----------------------------
+//Some Main Variables
+//-----------------------
+
+  var GameStart=false;
+  var scoreCounter=0;
+  var level1Enable=false;
+  var level2Enable=false;
+  var musi = document.getElementById('Music');
+  musi.play();
+  musi.loop=true;
+
+  var Lmusi= document.getElementById('lasSound');
+  var Cmusi= document.getElementById('collide');
+//----------------------------
+
+
+//BackGround of the Game < Main backGround> 
+//---------------------------------------------
+  var background_texture = PIXI.Texture.fromImage("images/background1.jpg");
+  var background = new PIXI.TilingSprite(background_texture, window.innerWidth, window.innerHeight);
+  container.addChild(background);
+  var backAnimate=0;
+
+//Score 
+//--------
+  var score = new PIXI.Text("SCORE : ", "40px IrisUPC", "#cf9f99", "#cf9f99", 3);
+  score.position.x = window.innerWidth - 150;
+  score.position.y = 30;
+  score.anchor.x = 0.5;
+  score.anchor.y = 0.5;
+  container.addChild(score);
+
+//Start Button 
+//---------------
+  var start_texture = PIXI.Texture.fromImage("images/start.png");
+  var start = new PIXI.Sprite(start_texture);  
+  start.position.x = 650;
+  start.position.y = window.innerHeight/2;
+  start.anchor.x = 0.5;
+  start.anchor.y = 0.5;
+  start.scale.x = 0.7;
+  start.scale.y = 0.7;
+
+  start.visible=true;
+  start.setInteractive(true);
+
+  container.addChild(start);
+
+//Level one Button
+//-------------------
+ var level1_texture = PIXI.Texture.fromImage("images/lev1.png");
+ var level1 = new PIXI.Sprite(level1_texture);
+ level1.position.x = 1000;
+ level1.position.y = window.innerHeight/2;
+ level1.anchor.x = 0.5;
+ level1.anchor.y = 0.5;
+ level1.scale.x = 0.5;
+ level1.scale.y = 0.5;
+    
+ level1.visible=true;    
+ level1.setInteractive(true);
+
+ container.addChild(level1);
+
+
+ var lv1 = new PIXI.Text("Normal", "35px Felix Titling", "#3300CC", "#3300CC", 3);
+ lv1.position.x = 993
+ lv1.position.y = window.innerHeight/2  
+ lv1.anchor.x = 0.5;
+ lv1.anchor.y = 0.5;
+ lv1.alpha=1;
+ container.addChild(lv1);
+
+
+
+//Level two Button
+//------------------
+ var level2_texture = PIXI.Texture.fromImage("images/lev2.png");
+ var level2 = new PIXI.Sprite(level2_texture); 
+ level2.position.x = 300;
+ level2.position.y = window.innerHeight/2;
+ level2.anchor.x = 0.5;
+ level2.anchor.y = 0.5;
+ level2.scale.x = 0.5;
+ level2.scale.y = 0.5;
+
+ level2.visible=true;
+ level2.setInteractive(true);
+
+ container.addChild(level2);
+
+
+ var lv2 = new PIXI.Text("Hard", "35px Felix Titling", "#FF6600", "#FF6600", 3);
+ lv2.position.x = 320
+ lv2.position.y = window.innerHeight/2  
+ lv2.anchor.x = 0.5;
+ lv2.anchor.y = 0.5;
+ lv2.alpha=1;
+ container.addChild(lv2);
+
+//SpaceShuttle
+//-------------
+
+     var spaceShuttle_texture = PIXI.Texture.fromImage("images/spaceShuttle.png");
+     var spaceShuttle = new PIXI.Sprite(spaceShuttle_texture);  
+     spaceShuttle.position.x = window.innerWidth/2;
+     spaceShuttle.position.y = window.innerHeight-50;
+     spaceShuttle.anchor.x = 0.5;
+     spaceShuttle.anchor.y = 0.5;
+     spaceShuttle.scale.x = 0.23;
+     spaceShuttle.scale.y = 0.23;
+     spaceShuttle.rotation = -0.8;
+
+     spaceShuttle.visible=false;
+     spaceShuttle.setInteractive(true);
+
+     spaceShuttle.dragging=true;
+
+     container.addChild(spaceShuttle);
+
+//Laser
+//-------
+     var fire=false;  //used in mouse action
+     var lasercount=0; // used in animation
+     var Laser=[];
+
+     var laser_texture = PIXI.Texture.fromImage("images/fire.png");
+
+     for(var i=0; i<50;i++){
+       Laser[i] = new PIXI.Sprite(laser_texture); 
+       Laser[i].scale.x=0.01;
+       Laser[i].scale.y=0.01;
+       //Laser[i].visible=false;
+       Laser[i].alpha=0;
+       container.addChild(Laser[i])
+    }
+
+
+ //Enemies
+//-----------------
+
+//        ******************
+//        Level one Enemies 
+//        ******************
+    var Enemies1= [];
+    var enemyMotion1= 0;  // used in Animation
+    var enemy_texture1 = PIXI.Texture.fromImage("images/enemy1.png");
+
+   for (var i=0; i <25; i++){
+     //   var scaleEnemy =Math.random() /5;
+       Enemies1[i] = new PIXI.Sprite(enemy_texture1); 
+
+       Enemies1[i] .position.x = Math.floor((Math.random()*1000))+30;
+       Enemies1[i] .position.y = Math.floor((Math.random()*window.innerHeight))-window.innerHeight - (window.innerHeight/2);
+       Enemies1[i] .scale.x=0.25; 
+       Enemies1[i] .scale.y=0.25;  
+   }//End if level 1
+
+
+//       ******************
+//       Level two Enemies 
+//       ******************
+   var Enemies2= [];
+   var enemyMotion2= 0;
+   var enemy_texture2 = PIXI.Texture.fromImage("images/enemy2.png");
+
+   for (var i=0; i <50; i++){
+       Enemies2[i] = new PIXI.Sprite(enemy_texture2); 
+
+       Enemies2[i] .position.x = Math.floor((Math.random()*1000))+30;
+       Enemies2[i] .position.y = Math.floor((Math.random()*window.innerHeight))-window.innerHeight - (window.innerHeight/2);
+       Enemies2[i] .scale.x=0.25; 
+       Enemies2[i] .scale.y=0.25;  
+   } //end of level 2
+
+
+//Life symbols
+//--------------
+   var Life =[];
+   var SpaceLife = 3;
+   var life_texture = PIXI.Texture.fromImage("images/life2.png");
+
+   for(var i=0; i<3;i++){
+
+     Life[i] = new PIXI.Sprite(life_texture);
+     Life[i].scale.x=0.15; 
+     Life[i].scale.y=0.15;
+     Life[i].position.x= window.innerWidth - 100;
+     Life[i].position.y= 100*(i+1);
+     Life[i].visible=true;
+
+     container.addChild(Life[i]);
+
+   }
+
+// Warning Text When The SpaceShuttle life lost
+//-----------------------------------------------
+  var lifetext = new PIXI.Text(" ", "40px IrisUPC", "#FF3300", "#FF3300", 3);
+  lifetext .position.x = 500;
+  lifetext .position.y = 500;
+  lifetext .anchor.x = 0.5;
+  lifetext .anchor.y = 0.5;
+  lifetext.alpha=0;
+  lifetext.setInteractive(true);
+  container.addChild(lifetext);
+
+// Warning Text Game OVER
+//-----------------------------------------------
+
+  var gameOvertext = new PIXI.Text(" ", "80px IrisUPC", "#FF3300", "#FF3300", 3);
+  gameOvertext.position.x = window.innerWidth/2;
+  gameOvertext.position.y =window.innerHeight/2;
+  gameOvertext.anchor.x = 0.5;
+  gameOvertext.anchor.y = 0.5;
+  gameOvertext.alpha=0;
+  //gameOvertext.setInteractive(true);
+  container.addChild(gameOvertext);
+
+// Pause Button & its Sign 
+//-----------------------------------------------
+ var pauseButton_texture= PIXI.Texture.fromImage("images/pause1.png");
+ var pauseB = new PIXI.Sprite(pauseButton_texture);  
+ pauseB.position.x = 50;
+ pauseB.position.y = window.innerHeight-50;
+ pauseB.anchor.x = 0.5;
+ pauseB.anchor.y = 0.5;
+ pauseB.scale.x = 0.1;
+ pauseB.scale.y = 0.1;
+ pauseB.alpha=1;
+
+ //pauseB.visible=false;
+ pauseB.setInteractive(true);
+
+ container.addChild(pauseB);
+ //Pause Sign
+ //----------------
+
+ var pauses_texture= PIXI.Texture.fromImage("images/pause2.png");
+ var pauses = new PIXI.Sprite(pauses_texture);  
+ pauses.position.x = window.innerWidth/2;
+ pauses.position.y = window.innerHeight/2 -20;
+ pauses.anchor.x = 0.5;
+ pauses.anchor.y = 0.5;
+ pauses.scale.x = 0.5;
+ pauses.scale.y = 0.5;
+ pauses.visible=false;
+
+ //pauseB.visible=false;
+ pauses.setInteractive(true);
+
+ container.addChild(pauses);
+
+ //Exit button
+
+ // Pause Button & its Sign 
+//-----------------------------------------------
+ var exitButton_texture= PIXI.Texture.fromImage("images/ExitButton.gif");
+ var exit = new PIXI.Sprite(exitButton_texture);  
+ exit.position.x = window.innerWidth - 50;
+ exit.position.y = window.innerHeight-50;
+ exit.anchor.x = 0.5;
+ exit.anchor.y = 0.5;
+ exit.alpha=1;
+
+ //pauseB.visible=false;
+ exit.setInteractive(true);
+
+ container.addChild(exit);
+
+ //Music Symbol ON
+//---------------
+  var music_texture1 = PIXI.Texture.fromImage("images/music1.png");
+  var musicOn = new PIXI.Sprite(music_texture1);  
+  musicOn.position.x = 50;
+  musicOn.position.y = 35;
+  musicOn.anchor.x = 0.5;
+  musicOn.anchor.y = 0.5;
+  musicOn.scale.x = 0.05;
+  musicOn.scale.y = 0.05;
+
+  musicOn.visible=true;
+  musicOn.setInteractive(true);
+
+  container.addChild(musicOn);
+
+//Music Symbol OFF
+//-----------------
+ var music_texture3 = PIXI.Texture.fromImage("images/music3.png");
+ var musicOf = new PIXI.Sprite(music_texture3);  
+ musicOf.position.x = 50;
+ musicOf.position.y = 35;
+ musicOf.anchor.x = 0.5;
+ musicOf.anchor.y = 0.5;
+ musicOf.scale.x = 0.05;
+ musicOf.scale.y = 0.05;
+
+ musicOf.visible=false;
+ musicOf.setInteractive(true);
+
+ container.addChild(musicOf);
+
+
+
+
+
+//=========================================================================================================================================
+
+//====================  Mouse Action ============================
+
+
+
+ //Mouse Action on the Start button
+//---------------------------------
+  start.mousedown = start.touchstart = function(data) {
+
+    lv1.alpha=0;
+    lv2.alpha=0;
+      if(level1Enable || level2Enable){ // if choose level 1 or level 2 
+            level1.alpha=0;
+            level2.alpha=0;
+            this.alpha = 0; 
+            GameStart=true;
+            spaceShuttle.visible=true;
+
+            if(level1Enable)
+              {
+                for (var i=0; i <25; i++){
+                container.addChild(Enemies1[i]);
+              }
+            }
+            else{
+
+              for (var i=0; i <50; i++){
+              container.addChild(Enemies2[i]);
+            }
+
+            //var background_texture2 = PIXI.Texture.fromImage("images/background1.png");
+            //background = new PIXI.TilingSprite(background_texture2, window.innerWidth, window.innerHeight);
+            //container.addChildAt(background,0);
+          }
+
+
+      }
+      else{ //Defaulet Level is Level 1
+
+        level1Enable=true;
+        level2Enable=false;
+        level1.alpha=0;
+        level2.alpha=0;
+        this.alpha = 0; 
+        GameStart=true;
+        spaceShuttle.visible=true;
+        for (var i=0; i <25; i++){
+        container.addChild(Enemies1[i]);
+        }
+         }
+          
+  }; //End of start button 
+
+//---------------------------------------------------
+//Mouse Action on exit button
+//----------------------------
+  exit.mouseover = function(data) {
+  this.alpha=3;
+  };
+
+  exit.mouseout = function(data) {
+  this.alpha=1;
+  };
+ exit.mousedown = exit.touchstart = function(data) {
+
+  GameStart=false;
+  stage.removeChild(container);
+  musi.pause();
+  };
+
+//---------------------------------------------------
+//Mouse Action on the Level 1 button
+//---------------------------------
+  level1.mousedown = level1.touchstart = function(data){
+    if(!GameStart){
+    this.alpha = 2; 
+    level2.alpha=1;
+    level1Enable=true;
+    level2Enable=false;}
+  };
+
+//---------------------------------------------------
+//Mouse Action on the Level 2 button
+//---------------------------------
+  level2.mousedown = level2.touchstart = function(data){
+   if(!GameStart){
+   this.alpha = 2;
+   level1.alpha=1; 
+   level2Enable=true;
+   level1Enable=false;}
+  };
+
+//---------------------------------------------------
+//Mouse Action on the Music button
+//---------------------------------
+    musicOn.mousedown = musicOn.touchstart = function(data){
+    musi.pause();
+    musicOf.visible=true;
+    musicOn.visible=false;
+    Lmusi.muted=true;
+    Cmusi.muted=true;
+  };
+
+   musicOn.mouseup = musicOn.touchend = function(data){
+   spaceShuttle.dragging=true;}
+
+   musicOf.mousedown = musicOf.touchstart = function(data){
+   musi.play();
+   musicOf.visible=false;
+   musicOn.visible=true;
+   Lmusi.muted=false;
+   Cmusi.muted=false;
+  };
+
+//--------------------------------------------------------    
+//Motion Control 
+//--------------
+//Space Shuttle Movement
+//---------------------------
+  spaceShuttle.mousemove = spaceShuttle.touchmove = function(data) {
+    if(this.dragging){
+      var newPosition = data.getLocalPosition(this.parent);
+      this.position.x = newPosition.x;
+      this.position.y = newPosition.y;}
+  };
+
+//Start Firing 
+//------------
+   spaceShuttle.mousedown = spaceShuttle.touchstart = function(data){
+    this.data = data;
+    this.alpha = 1; 
+    fire= true;
+    Lmusi.play();
+    Lmusi.loop=true;
+   };
+
+//Stop firing 
+//------------
+    spaceShuttle.mouseup = spaceShuttle.mouseupoutside = spaceShuttle.touchend = spaceShuttle.touchendoutside = function(data){
+     this.alpha = 1
+    fire= false;
+   Lmusi.pause();
+    };
+        
+
+
+//Warning Text
+//----------------
+  lifetext.mousedown = lifetext.touchstart = function(data){
+
+    if(gameOvertext.alpha==1){
+    spaceShuttle.dragging=false;
+    spaceShuttle.visible=false;
+    this.alpha = 0; 
+    }
+    else{
+    spaceShuttle.dragging=true;
+    spaceShuttle.visible=true;
+    this.alpha = 0;} 
+  };
+
+
+  //Pause Button
+  //-------------
+
+      pauseB.mousedown = pauseB.touchstart = function(data){
+      
+      this.isdown = true;
+      if(pauseB.alpha==1){
+      this.alpha = 2;
+      pauses.visible=true
+      GameStart=false;}
+      else{
+      this.alpha = 1;
+      pauses.visible=false;
+      GameStart=true;
+
+      }
+    }
+    pauses.mousedown = pauses.touchstart = function(data){
+      
+      this.isdown = true;
+      this.visible=false;
+      pauseB.alpha=1;
+      GameStart=true;
+    }
+//====================================================================================================================
+
+ stage.addChild(container);
+
+//Function To Check the Collision between Two objects (Laser & Enemies)
+//---------------------------------------------
+  function Collision(a,b){
+      if(a.position.y < b.position.y + b.height && a.position.y > b.position.y  && a.position.x > b.position.x && a.position.x + a.width < b.position.x + b.width) 
+       { return true;}
+       else{
+        return false;
+      }
+   };
+//====================================================================================================================
+
+
+
+
+
+//          ***********************************************************************************************************
+//          ************************            Animating Function          *******************************************
+//          ***********************************************************************************************************     
+
+function animate() {
+
+    backAnimate +=0.005;
+    background.tilePosition.y += 5;
+    lasercount +=1;
+
+
+if(GameStart==true){
+
+//********************* LEVEL ONE ********************
+//*****************************************************
+
+  if(level1Enable){
+
+  if(fire)
+   {  
+    var Index = lasercount%50;
+    Laser[Index].alpha=1;       
+    Laser[Index].position.x = spaceShuttle.position.x - Laser[Index].width/2  ;
+    Laser[Index].position.y = spaceShuttle.position.y-80; 
+    }
+
+
+ //Fire Moving 
+//--------------
+  for (var i=0; i < 50; i++){
+    if (Laser[i].visible == true){
+        Laser[i].position.y -= 30;
+    }
+    if (Laser[i].position.y + Laser[i].height < 0){
+      Laser[i].alpha=0;}
+    }//End of For 
+
+
+//----------------------------------------------------------
+//Moving of enemies
+//-------------------
+  for(var j=0; j<25; j++){
+
+    Enemies1[j].position.y +=10;   // Moving The Enemy DownWards
+
+    //Repeat again if the enemy reach the end of the screen
+    if(Enemies1[j].position.y > window.innerHeight){
+      Enemies1[j] .position.x = Math.floor((Math.random()*1000))+30;
+      Enemies1[j] .position.y = Math.floor((Math.random()*window.innerHeight))-window.innerHeight;
+      }//End of repeat if 
+
+
+//-------------------------------------------------------------------------------------------------------------------
+//Checking if the Laser hit the specific enemy or not 
+//--------------------------------------------------
+
+  for (var l=0; l<50; l++) {
+
+   if(Collision(Laser[l],Enemies1[j])==true){  //There is a collision
+     if(Laser[l].alpha==1)
+       { scoreCounter++;}  //if the laser was visible on the screen
+    Enemies1[j].position.y =  Math.floor((Math.random()*window.innerHeight))-window.innerHeight - (window.innerHeight/2);
+     Laser[l].alpha=0;} //end of if collision
+   }// End of for-->l
+
+//-------------------------------------------------------------------------------------------------------------------
+//Checking if the SpaceShuttle hit the specific enemy or not 
+//--------------------------------------------------
+if( spaceShuttle.visible==true && Enemies1[j].position.x < spaceShuttle.position.x + spaceShuttle.width/2 && Enemies1[j].position.x + Enemies1[j].width > spaceShuttle.position.x && Enemies1[j].position.y +Enemies1[j].height*1.5 > spaceShuttle.position.y && Enemies1[j].position.y + Enemies1[j].height< spaceShuttle.position.y + spaceShuttle.height)
+{
+
+  SpaceLife--;
+
+  if(SpaceLife>=0)
+    {Life[ SpaceLife].visible= false;}
+
+  spaceShuttle.dragging=false;
+  lifetext.alpha=1;
+  lifetext.setText("You Have Only : "  + SpaceLife +" Trial" );
+  spaceShuttle.position.x=500;
+  spaceShuttle.position.y=500;
+  spaceShuttle.visible=false;
+  Cmusi.play();
+
+
+  if(SpaceLife<0){
+    spaceShuttle.visible=false;
+   // GameStart=false;
+   lifetext.alpha=0;
+   gameOvertext.alpha=1;
+   gameOvertext.setText(" Game Over ! ");
+  }
+ 
+   }//End of if spacshuttle hits
+ //--------------------------------------
+
+ //spaceShuttle.dragging=true;
+
+   }//End of for -->j <<Enemy>>     
+}//End of level one 
+
+//-------------------------------------------------------------------------------------------------------
+
+//********************* LEVEL TWO ********************
+//****************************************************
+
+if(level2Enable){
+
+  if(fire)
+   {  
+    var Index = lasercount%50;
+    Laser[Index].alpha=1;       
+    Laser[Index].position.x = spaceShuttle.position.x - Laser[Index].width/2  ;
+    Laser[Index].position.y = spaceShuttle.position.y-80; 
+    }
+
+
+ //Fire Moving 
+//--------------
+  for (var i=0; i < 50; i++){
+    if (Laser[i].visible == true){
+        Laser[i].position.y -= 30;
+    }
+    if (Laser[i].position.y + Laser[i].height < 0){
+      Laser[i].alpha=0;}
+    }//End of For 
+
+
+//----------------------------------------------------------
+//Moving of enemies
+//-------------------
+  
+  for(var j=0; j<50; j++){
+
+    Enemies2[j].position.y +=15;   // Moving The Enemy DownWards
+    Enemies2[j].rotation +=0.1
+
+    if(Enemies2[j].position.y < window.innerHeight/2 - 200)
+    {Enemies2[j].position.x -=5;}
+    else
+    {Enemies2[j].position.x +=5;}
+
+
+    //Repeat again if the enemy reach the end of the screen
+    if(Enemies2[j].position.y > window.innerHeight){
+      Enemies2[j] .position.x = Math.floor((Math.random()*1000))+30;
+      Enemies2[j] .position.y = Math.floor((Math.random()*window.innerHeight))-window.innerHeight;
+      }//End of repeat if 
+
+
+
+//-------------------------------------------------------------------------------------------------------------------
+//Checking if the Laser hit the specific enemy or not 
+//--------------------------------------------------
+
+  for (var l=0; l<50; l++) {
+
+   if(Collision(Laser[l],Enemies2[j])==true){  //There is a collision
+     if(Laser[l].alpha==1)
+       { scoreCounter++;}  //if the laser was visible on the screen
+    Enemies2[j].position.y =  Math.floor((Math.random()*window.innerHeight))-window.innerHeight - (window.innerHeight/2);
+     Laser[l].alpha=0;} //end of if collision
+   }// End of for-->l
+
+//-------------------------------------------------------------------------------------------------------------------
+//Checking if the SpaceShuttle hit the specific enemy or not 
+//--------------------------------------------------
+if( spaceShuttle.visible==true && Enemies2[j].position.x < spaceShuttle.position.x + spaceShuttle.width/2 && Enemies2[j].position.x + Enemies2[j].width > spaceShuttle.position.x && Enemies2[j].position.y +Enemies2[j].height*1.5 > spaceShuttle.position.y && Enemies2[j].position.y + Enemies2[j].height< spaceShuttle.position.y + spaceShuttle.height)
+{
+
+  SpaceLife--;
+
+  if(SpaceLife>=0)
+    {Life[ SpaceLife].visible= false;}
+
+  spaceShuttle.dragging=false;
+  lifetext.alpha=1;
+  lifetext.setText("You Have Only : "  + SpaceLife +" Trial" );
+  spaceShuttle.position.x=500;
+  spaceShuttle.position.y=500;
+  spaceShuttle.visible=false;
+  Cmusi.play();
+
+
+  if(SpaceLife<0){
+    spaceShuttle.visible=false;
+   // GameStart=false;
+   lifetext.alpha=0;
+   gameOvertext.alpha=1;
+   gameOvertext.setText(" Game Over ! ");
+  }
+ 
+   }//End of if spacshuttle hits
+ //--------------------------------------
+
+ //spaceShuttle.dragging=true;
+
+   }//End of for -->j <<Enemy>>     
+}//End of level Two 
+
+
+}//End of gameStart
+
+ score.setText("SCORE : "  + scoreCounter*10 );  //The Score of the Game while starting
+	 
+ renderer.render(stage);    // render the stage  
+ requestAnimFrame( animate );
+
+	}//End of Animating Function
+
+
+</script>
+
+</body>
+</html>
